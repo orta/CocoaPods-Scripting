@@ -32,7 +32,7 @@ unless Dir.exists? "Specs"
 end
 
 Dir.chdir("Specs") do
-  `git checkout master`
+  # `git checkout master`
   
   while current_date > first_date
     current_date = current_date - 7
