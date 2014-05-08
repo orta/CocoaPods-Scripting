@@ -10,35 +10,6 @@ $active_folder = "/Users/orta/spiel/ios/Specs"
 @emails = []
 @spec_metadata = []
 
-@licenses = SortedSet.new
-@numbers = {};
-
-# Get the licenses + use count and order by popularity
-
-def get_all_licenses pod_path
-  
-  begin 
-    spec = eval( File.open(pod_path).read )
-
-    if @licenses.include? spec.license[:type]
-      @numbers[spec.license[:type]] =   @numbers[spec.license[:type]] + 1
-    else
-      @licenses.add spec.license[:type]
-      @numbers[spec.license[:type]] = 1
-    end
-
-  rescue Exception => e
-  
-  end
-end
-
-def get_all_licenses_done
-  @numbers.sort_by {|_key, value| value}
-
-  for key, value in @numbers
-   puts value.to_s + " " + key
-  end
-end
 
 # Find all the authors of specs with a commit instead of a tag
 
