@@ -22,29 +22,18 @@ end
 # recommend throwing into http://textmechanic.com/Sort-Text-Lines.html 
 # then doing natural sort
 
-$current_dir = File.dirname(File.expand_path(__FILE__)) 
-$active_folder = $current_dir + "/../specs/"
-
 @users = SortedSet.new
 @numbers = {};
 
 # Get the users + use count and order by popularity
 
-def get_all_users pod_path
-  
-  begin 
-    spec = eval( File.open(pod_path).read )
-
-    user = spec.or_contributors_to_spec
-    if @users.include? user
-      @numbers[user] = @numbers[user] + 1
-    else
-      @users.add user
-      @numbers[user] = 1
-    end
-
-  rescue Exception => e
-  
+def get_all_users(spec)
+  user = spec.or_contributors_to_spec
+  if @users.include? user
+    @numbers[user] = @numbers[user] + 1
+  else
+    @users.add user
+    @numbers[user] = 1
   end
 end
 
@@ -61,18 +50,12 @@ end
 @done = :get_all_users_done
 
 
-Dir.foreach $active_folder do |pod|
-  
-  next if pod[0] == '.'
-  next unless File.directory? "#{$active_folder}/#{pod}/"
-  
-  Dir.foreach $active_folder + "/#{pod}" do |version|
-    
-    next if version[0] == '.'
-    next unless File.directory? "#{$active_folder}/#{pod}/#{version}/"
-    
-    self.send @method, "#{$active_folder}/#{pod}/#{version}/#{pod}.podspec"
-  end
+config = Pod::Config.new()
+source = Pod::Source.new(config.repos_dir + 'master')
+
+source.all_specs.each do |spec|
+  self.send @method, spec
 end
 
 self.send @done
+
