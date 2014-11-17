@@ -5,7 +5,7 @@ require 'set'
 # $current_dir = File.dirname(File.expand_path(__FILE__)) 
 # $active_folder = $current_dir + "/specs/"
 
-$active_folder = "/Users/orta/spiel/ios/Specs"
+$active_folder = "/Users/orta/dev/ruby/CocoaPods-Scripting/Specs/"
 
 @emails = []
 @spec_metadata = []
