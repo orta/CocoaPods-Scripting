@@ -33,8 +33,13 @@ connection = Flounder.connect options
 
 # Setup tables
 DB = Flounder.domain connection do |dom|
+  # Trunk
   dom.entity :pods, :pod, 'pods'
+
+  # CocoaDocs
   dom.entity :cocoadocs_pod_metrics, :cocoadocs_pod_metric, 'cocoadocs_pod_metrics'
+  dom.entity :commits, :commit, 'commits'
+  dom.entity :pod_versions, :pod_version, 'pod_versions'
 end
 
 # Generate easy accessors
@@ -48,30 +53,29 @@ end
 missed = 0
 
 # Loop through all Pods
-source = Pod::Source.new("#{ENV['HOME']}/.cocoapods/repos/master")
-source.pod_sets.each do |spec_set|
+pods.where(deleted: false).each do |result|
 
   # Grab latest spec for rendering description
-  spec_path = spec_set.highest_version_spec_path
-  spec = Pod::Specification.from_file(spec_path)
+  version = pod_versions.where(pod_id: result["id"]).sort_by { |v| Pod::Version.new(v.name) }.last
+  commit = commits.where(pod_version_id: version.id, deleted_file_during_import: false).first
 
-  # Find it in trunk db
-  pod = pods.where(pods[:name] => spec_set.name).first
-  unless pod
-    puts "Skipping #{spec_set.name} cause of not in pod db."
-    missed +=1
-    next
-  end
-
-  # Look up CD metric to append to
-  metric = cocoadocs_pod_metrics.where(cocoadocs_pod_metrics[:pod_id] => pod.id).first
-  unless metric
-    puts "Skipping #{spec_set.name} cause of no metrics in db."
+  unless commit
+    puts "\nSkipping #{result["name"]} cause of no commit data in db."
     missed += 1
     next
   end
 
-  cocoadocs_pod_metrics.update( "rendered_summary" => spec.or_summary_html ).where(id: metric.id)
-end
+  spec = Pod::Specification.from_json commit.specification_data
 
-puts "Skipped #{missed} pods. =("
+  # Look up CD metric to append to
+  metric = cocoadocs_pod_metrics.where(cocoadocs_pod_metrics[:pod_id] => result["id"]).first
+  unless metric
+    puts "\nSkipping #{spec.name} cause of no metrics in db."
+    missed += 1
+    next
+  end
+
+  summary = spec.or_summary_html.gsub(/\0/, '')
+  puts "Updating: #{result["name"]}"
+  cocoadocs_pod_metrics.update( "rendered_summary" => summary ).where(id: metric.id).kick.first
+end
