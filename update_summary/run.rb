@@ -45,6 +45,8 @@ DB.entities.each do |entity|
   end
 end
 
+missed = 0
+
 # Loop through all Pods
 source = Pod::Source.new("#{ENV['HOME']}/.cocoapods/repos/master")
 source.pod_sets.each do |spec_set|
@@ -55,12 +57,21 @@ source.pod_sets.each do |spec_set|
 
   # Find it in trunk db
   pod = pods.where(pods[:name] => spec_set.name).first
-  next unless pod
+  unless pod
+    puts "Skipping #{spec_set.name} cause of not in pod db."
+    missed +=1
+    next
+  end
 
-  # Look CD metric to append to
+  # Look up CD metric to append to
   metric = cocoadocs_pod_metrics.where(cocoadocs_pod_metrics[:pod_id] => pod.id).first
-  next unless metric
+  unless metric
+    puts "Skipping #{spec_set.name} cause of no metrics in db."
+    missed += 1
+    next
+  end
 
-  puts "Updating #{spec_set.name}"
   cocoadocs_pod_metrics.update( "rendered_summary" => spec.or_summary_html ).where(id: metric.id)
 end
+
+puts "Skipped #{missed} pods. =("
